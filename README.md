@@ -11,4 +11,5 @@ Each mate kit has a unique identification number. Every loan links one registere
 MateControl is intended to make the lending and return process faster, reduce duplicate data entry, and provide student centers with a single, organized record of their students and equipment.
 
 ## Licence
+
 This project is licensed under the MIT License.
