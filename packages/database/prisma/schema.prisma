@@ -1,8 +1,154 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider        = "prisma-client"
+  output          = "../src/generated/prisma"
+  previewFeatures = ["partialIndexes"]
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+enum CenterUserRole {
+  admin
+  operator
+}
+
+enum EquipmentStatus {
+  in_service
+  maintenance
+  retired
+}
+
+model Center {
+  id        Int      @id @default(autoincrement())
+  name      String   @db.VarChar(120)
+  slug      String   @unique @db.VarChar(80)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  users     CenterUser[]
+  students  Student[]
+  equipment Equipment[]
+  loans     Loan[]
+  auditLogs AuditLog[]
+
+  @@map("centers")
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  name         String   @db.VarChar(120)
+  email        String   @unique @db.VarChar(255)
+  passwordHash String   @map("password_hash")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  centerUsers CenterUser[]
+
+  @@map("users")
+}
+
+model CenterUser {
+  centerId  Int            @map("center_id")
+  userId    Int            @map("user_id")
+  role      CenterUserRole
+  isActive  Boolean        @default(true) @map("is_active")
+  createdAt DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  center        Center     @relation(fields: [centerId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  user          User       @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  createdLoans  Loan[]     @relation("LoanCreatedBy")
+  returnedLoans Loan[]     @relation("LoanReturnedBy")
+  auditLogs     AuditLog[]
+
+  @@id([centerId, userId])
+  @@index([userId])
+  @@map("center_users")
+}
+
+model Student {
+  id            Int      @id @default(autoincrement())
+  centerId      Int      @map("center_id")
+  firstName     String   @map("first_name") @db.VarChar(100)
+  lastName      String   @map("last_name") @db.VarChar(100)
+  dni           String   @db.VarChar(12)
+  studentNumber String   @map("student_number") @db.VarChar(40)
+  phoneE164     String   @map("phone_e164") @db.VarChar(16)
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  center Center @relation(fields: [centerId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  loans  Loan[]
+
+  @@unique([centerId, dni])
+  @@unique([centerId, studentNumber])
+  @@unique([centerId, phoneE164])
+  @@unique([centerId, id])
+  @@index([centerId, lastName, firstName])
+  @@map("students")
+}
+
+model Equipment {
+  id                Int             @id @default(autoincrement())
+  centerId          Int             @map("center_id")
+  code              String          @db.VarChar(30)
+  operationalStatus EquipmentStatus @default(in_service) @map("operational_status")
+  notes             String?
+  createdAt         DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  center Center @relation(fields: [centerId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  loans  Loan[]
+
+  @@unique([centerId, code])
+  @@unique([centerId, id])
+  @@index([centerId, operationalStatus])
+  @@map("equipment")
+}
+
+model Loan {
+  id               Int       @id @default(autoincrement())
+  centerId         Int       @map("center_id")
+  studentId        Int       @map("student_id")
+  equipmentId      Int       @map("equipment_id")
+  createdByUserId  Int       @map("created_by_user_id")
+  returnedByUserId Int?      @map("returned_by_user_id")
+  loanedAt         DateTime  @default(now()) @map("loaned_at") @db.Timestamptz(6)
+  returnedAt       DateTime? @map("returned_at") @db.Timestamptz(6)
+  notes            String?
+
+  center     Center      @relation(fields: [centerId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  student    Student     @relation(fields: [centerId, studentId], references: [centerId, id], onDelete: Restrict, onUpdate: Cascade)
+  equipment  Equipment   @relation(fields: [centerId, equipmentId], references: [centerId, id], onDelete: Restrict, onUpdate: Cascade)
+  createdBy  CenterUser  @relation("LoanCreatedBy", fields: [centerId, createdByUserId], references: [centerId, userId], onDelete: Restrict, onUpdate: Cascade)
+  returnedBy CenterUser? @relation("LoanReturnedBy", fields: [centerId, returnedByUserId], references: [centerId, userId], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([centerId, equipmentId], map: "uq_loans_active_equipment", where: { returnedAt: null })
+  @@index([centerId, loanedAt(sort: Desc)], map: "idx_loans_active_center", where: { returnedAt: null })
+  @@index([centerId, studentId, loanedAt(sort: Desc)], map: "idx_loans_student_history")
+  @@index([returnedByUserId], map: "idx_loans_returned_by")
+  @@map("loans")
+}
+
+model AuditLog {
+  id          Int      @id @default(autoincrement())
+  centerId    Int      @map("center_id")
+  actorUserId Int?     @map("actor_user_id")
+  action      String   @db.VarChar(60)
+  entityType  String   @map("entity_type") @db.VarChar(60)
+  entityId    Int?     @map("entity_id")
+  metadata    Json     @default("{}") @db.JsonB
+  occurredAt  DateTime @default(now()) @map("occurred_at") @db.Timestamptz(6)
+
+  center Center      @relation(fields: [centerId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  actor  CenterUser? @relation(fields: [centerId, actorUserId], references: [centerId, userId], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([centerId, occurredAt(sort: Desc)])
+  @@index([entityType, entityId])
+  @@index([actorUserId])
+  @@map("audit_logs")
 }
