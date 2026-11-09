@@ -1,0 +1,11 @@
+node_modules
+dist
+.next
+coverage
+pnpm-lock.yaml
+packages/database/src/generated
+next-env.d.ts
+apps/web/AGENTS.md
+SPEC.md
+*.tsbuildinfo
+.husky

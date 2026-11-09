@@ -1,0 +1,13 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+
+allowBuilds:
+  '@prisma/client': true
+  '@prisma/engines': true
+  prisma: true
+  sharp: false
+  unrs-resolver: false
+
+minimumReleaseAgeExclude:
+  - dotenv@18.0.10

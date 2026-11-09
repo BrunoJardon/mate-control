@@ -1,0 +1,43 @@
+{
+  "name": "mate-control",
+  "version": "1.0.0",
+  "description": "",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.18.0",
+  "scripts": {
+    "dev": "pnpm --filter @mate-control/database build && pnpm -r --parallel --if-present run dev",
+    "build": "pnpm -r --if-present run build",
+    "start": "pnpm -r --parallel --if-present run start",
+    "test": "pnpm --filter @mate-control/database build && pnpm -r --if-present run test",
+    "lint": "pnpm -r --if-present run lint",
+    "lint:fix": "pnpm -r --if-present run lint:fix",
+    "typecheck": "pnpm -r --if-present run typecheck",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "db:logs": "docker compose logs -f postgres",
+    "db:generate": "pnpm --filter @mate-control/database db:generate",
+    "db:migrate": "pnpm --filter @mate-control/database db:migrate",
+    "db:studio": "pnpm --filter @mate-control/database db:studio",
+    "prepare": "husky"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "12.18.0",
+      "onFail": "download"
+    }
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^21.2.4",
+    "@commitlint/config-conventional": "^21.2.4",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.6.0",
+    "prettier": "^3.9.10"
+  }
+}
