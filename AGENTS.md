@@ -23,7 +23,10 @@ Domain work is still in SPEC.md Phase 1 (design); only infrastructure and scaffo
 - `pnpm typecheck` — real per-package typechecks (web runs `next typegen` first).
 - `pnpm format` / `pnpm format:check` — root Prettier (single quotes, trailing commas).
 - `pnpm db:up` / `db:down` / `db:logs` — Docker Compose Postgres.
-- `pnpm db:generate` / `db:migrate` / `db:studio` — Prisma via `@mate-control/database`.
+- `pnpm db:generate` / `db:migrate` / `db:migrate:deploy` / `db:seed` / `db:studio` — Prisma via `@mate-control/database`.
+- `pnpm db:reset` — drops and recreates the dev database, then migrates and seeds. Destructive; local development only.
+- `pnpm db:test:setup` — creates `mate_control_test` (idempotent). Required once before `pnpm test`.
+- `pnpm --filter @mate-control/database test` — database invariant tests against `mate_control_test`.
 
 ## Gotchas
 
@@ -31,6 +34,10 @@ Domain work is still in SPEC.md Phase 1 (design); only infrastructure and scaffo
 - API tests use Vitest, not Jest; don't add Jest config or Jest setup for `@nestjs/testing`.
 - The API loads the root `.env` via `@nestjs/config` (`envFilePath: ['../../.env', '.env']`); `DATABASE_URL` and `PORT` live there.
 - Prisma 7: the datasource URL is supplied by `packages/database/prisma.config.ts`, not `schema.prisma`; generated client goes to `packages/database/src/generated` (gitignored). Run `pnpm db:generate` after schema changes.
+- The schema uses `previewFeatures = ["partialIndexes"]` for the one-active-loan-per-equipment index. Keep the preview feature when editing `schema.prisma`.
+- CHECK constraints (`users_email_lowercase`, `centers_slug_lowercase`, `students_dni_format`, `students_phone_e164_format`, `loans_returned_fields_consistent`, `loans_returned_after_loaned`) exist only in `prisma/migrations/20261109173002_init/migration.sql`. Prisma cannot model them, and `prisma db pull` will drop them; append them by hand when creating migrations. `docs/database.md` is the schema source of truth.
+- Database tests use `TEST_DATABASE_URL` (`mate_control_test`) and migrate it with `prisma migrate deploy` in `test/global-setup.ts`. Run `pnpm db:test:setup` once; tests truncate tables between cases and run serially.
+- `prisma migrate reset` is destructive. Never run it against anything but a local development database, and confirm with the user first.
 - `packages/database` must be built before API dev/test; root scripts handle this, but direct `pnpm --filter api dev` requires a prior `pnpm --filter @mate-control/database build`.
 - `apps/web/AGENTS.md` is rewritten by `next dev`. Keep the generated block in commits; deleting it just recreates the change.
 - Next 16.4.5 differs from training data and has `cacheComponents` + `partialPrefetching` enabled. Consult `apps/web/node_modules/next/dist/docs/` before writing Next code.

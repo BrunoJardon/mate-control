@@ -20,8 +20,13 @@
     "dev": "tsc -p tsconfig.json --watch",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:reset": "prisma migrate reset",
+    "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
-    "typecheck": "prisma generate && tsc --noEmit"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "prisma generate && tsc -p tsconfig.test.json"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.10.1",
@@ -29,9 +34,12 @@
     "pg": "^8.23.1"
   },
   "devDependencies": {
+    "@types/node": "^26.6.6",
     "@types/pg": "^8.23.1",
     "dotenv": "^18.0.10",
     "prisma": "7.10.1",
-    "typescript": "^6.0.2"
+    "tsx": "^4.23.15",
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.12"
   }
 }
