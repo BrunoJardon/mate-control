@@ -20,6 +20,10 @@
     "db:logs": "docker compose logs -f postgres",
     "db:generate": "pnpm --filter @mate-control/database db:generate",
     "db:migrate": "pnpm --filter @mate-control/database db:migrate",
+    "db:migrate:deploy": "pnpm --filter @mate-control/database db:migrate:deploy",
+    "db:reset": "pnpm --filter @mate-control/database db:reset",
+    "db:seed": "pnpm --filter @mate-control/database db:seed",
+    "db:test:setup": "docker compose exec -T postgres createdb -U mate mate_control_test 2>/dev/null || true",
     "db:studio": "pnpm --filter @mate-control/database db:studio",
     "prepare": "husky"
   },
